@@ -1,0 +1,24 @@
+variable "region" {    
+    default = "eu-west-1"
+}
+
+variable "access_key" {
+     default = "***************"
+     
+}
+variable "secret_key" {
+     default = "***************"
+     
+}
+
+variable "cidr_block" {    
+    default = "10.0.0.0/16"
+}
+
+variable "public_cidr_block" {    
+    default = "10.0.1.0/24"
+}
+
+variable "private_cidr_block" {    
+    default = "10.0.2.0/24"
+}

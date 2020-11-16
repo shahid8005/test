@@ -1,0 +1,102 @@
+###Create VPC
+
+resource "aws_vpc" "emerald-labs" {
+    cidr_block = "var.cidr_block"
+    enable_dns_support = "true"
+    enable_dns_hostnames = "true"
+    enable_classiclink = "false"
+    instance_tenancy = "default"    
+    
+    tags {
+        Name = "emerald-labs"
+    }
+}
+
+##Create public subnet 
+
+resource "aws_subnet" "emerald-labs-public" {
+    vpc_id = "${aws_vpc.emerald-labs.id}"
+    cidr_block = "var.public_cidr_block"
+    map_public_ip_on_launch = "true"
+    availability_zone = "eu-west-1a"
+    tags {
+        Name = "emerald-labs-public"
+    }
+}
+
+##Create private subnet
+
+resource "aws_subnet" "emerald-labs-private" {
+    vpc_id = "${aws_vpc.emerald-labs.id}"
+    cidr_block = "var.private_cidr_block"
+    availability_zone = "eu-west-1b"
+    tags {
+        Name = "emerald-labs-private"
+    }
+}
+
+##Create gateways
+
+resource "aws_internet_gateway" "emerald-labs-igw" {
+    vpc_id = "${aws_vpc.emerald-labs.id}"
+    tags {
+        Name = "emerald-labs-igw"
+    }
+}
+
+resource "aws_eip" "nat" {
+}
+
+resource "aws_nat_gateway" "emerald-labs-ngw" {
+    vpc_id = "${aws_vpc.emerald-labs.id}"
+	allocation_id = "${aws_eip.nat.id}"
+	subnet_id     = "${aws_subnet.emerald-labs-public.id}"
+    tags {
+        Name = "emerald-labs-ngw"
+    }
+}
+
+
+
+##Create route tables
+
+resource "aws_route_table" "emerald-labs-public-rt" {
+    vpc_id = "${aws_vpc.emerald-labs.id}"
+    
+    route {
+        cidr_block = "0.0.0.0/0" 
+        gateway_id = "${aws_internet_gateway.emerald-labs-igw.id}" 
+    }
+    
+    tags {
+        Name = "emerald-labs-public-rt"
+    }
+}
+
+resource "aws_route_table" "emerald-labs-private-rt" {
+    vpc_id = "${aws_vpc.emerald-labs.id}"
+    
+    route {
+        cidr_block = "0.0.0.0/0" 
+        gateway_id = "${aws_nat_gateway.emerald-labs-ngw.id}
+    }
+    
+    tags {
+        Name = "emerald-labs-private-rt"
+    }
+}
+
+##Associate route tables to subnets
+
+resource "aws_route_table_association" "emerald-labs-rta-public-subnet"{
+    subnet_id = "${aws_subnet.emerald-labs-public.id}"
+    route_table_id = "${aws_route_table.emerald-labs-public-rt.id}"
+}
+
+
+resource "aws_route_table_association" "emerald-labs-rta-private-subnet"{
+    subnet_id = "${aws_subnet.emerald-labs-private.id}"
+    route_table_id = "${aws_route_table.emerald-labs-private-rt.id}"
+}
+
+#################################################################################################
